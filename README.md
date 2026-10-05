@@ -95,3 +95,24 @@ capturado na criação com `returns('id')`.
 - `expectResponseTime` para o limite de performance
 - `SimpleReporter` plugado via `p.reporter.add`, anexando request e response de
   cada spec ao relatório HTML
+
+## Observação sobre a suíte ServeRest no CI
+
+A suíte [`test/serve_rest.spec.ts`](test/serve_rest.spec.ts) é **ignorada apenas
+quando roda no GitHub Actions**, e continua executando normalmente em ambiente
+local.
+
+Motivo: a `serverest.dev` aplica rate limit por IP. Os runners do GitHub Actions
+operam em faixas de IP compartilhadas e, sob carga, a API passa a recusar as
+requisições. Como essa suíte cadastra um usuário no `beforeAll` e autentica no
+`beforeEach`, a recusa derruba os 9 cenários em cascata — mesmo com a API no ar.
+O mesmo efeito é reproduzível localmente após algumas execuções seguidas.
+
+O controle é feito em uma linha no topo do arquivo:
+
+```ts
+const describeServeRest = process.env.CI ? describe.skip : describe;
+```
+
+Nenhum cenário foi removido: rodando `npm test` na máquina local, as 9 suítes e
+os 43 testes são executados.
